@@ -90,7 +90,7 @@ class AgentQ:
 
   def new_sess(self):
     """Reset the agent for the beginning of a new session."""
-    self._q = self._q_init * np.ones(2**(self._stage)-1, self._n_actions)
+    self._q = self._q_init * np.ones((2**(self._stage)-1, self._n_actions))
 
 
   def get_choice_probs(self, counter=1, state=0) -> np.ndarray:
@@ -434,8 +434,8 @@ def run_experiment(agent: Agent,
   Returns:
     experiment: A BanditSession holding choices and rewards from the session
   """
-  choices = np.zeros(n_trials,stages) 
-  outcomes = np.zeros(n_trials, stages) # for 2-stage: 1st is whether common/rare, 2nd is whether reward/not
+  choices = np.zeros((n_trials,stages)) 
+  outcomes = np.zeros((n_trials, stages)) # for 2-stage: 1st is whether common/rare, 2nd is whether reward/not
   reward_probs = np.zeros((n_trials, environment.n_actions, 2**(stages-1))) # 2 for 1-stage, 4 for 2-stage tasks
     # self._reward_probs = np.random.rand(self._n_actions, 2**(self._n_stages-1))
   for trial in np.arange(n_trials):
