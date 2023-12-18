@@ -146,7 +146,7 @@ class AgentQ:
       traveled_state = int(choices[0]==outcomes[0]) 
       traveled_state += 1
       if counter>0: # update 2nd-stage values
-        self._q[traveled_state,choices[counter]] = (1 - self._alpha) * self._q[traveled_state,choices[counter]] + self._alpha * outcomes[counter]
+        self._q[traveled_state,int(choices[counter])] = (1 - self._alpha) * self._q[traveled_state,int(choices[counter])] + self._alpha * outcomes[counter]
       else: # counter=0
         # update 1st-stage values
         # pdb.set_trace()
