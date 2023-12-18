@@ -56,9 +56,11 @@ class AgentQ:
       self,
       alpha: float = 0.2,
       beta: float = 3.,
+      w: float=0.5,
       n_actions: int = 2,
       forgetting_rate: float = 0.,
-      perseveration_bias: float = 0.):
+      perseveration_bias: float = 0., 
+      stages: int=1):
     """Update the agent after one step of the task.
 
     Args:
@@ -71,36 +73,51 @@ class AgentQ:
     self._prev_choice = None
     self._alpha = alpha
     self._beta = beta
+    self._w = w
     self._n_actions = n_actions
     self._forgetting_rate = forgetting_rate
     self._perseveration_bias = perseveration_bias
     self._q_init = 0.5
+    self._stage = stages
+    # self._counter = counter
+    self._TM = np.array([[0.7, 0.3], [0.3, 0.7]])
     self.new_sess()
 
     _check_in_0_1_range(alpha, 'alpha')
     _check_in_0_1_range(forgetting_rate, 'forgetting_rate')
+    
+    
 
   def new_sess(self):
     """Reset the agent for the beginning of a new session."""
-    self._q = self._q_init * np.ones(self._n_actions)
+    self._q = self._q_init * np.ones(2**(self._stage)-1, self._n_actions)
 
-  def get_choice_probs(self) -> np.ndarray:
+
+  def get_choice_probs(self, counter=1, state=0) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
-    decision_variable = self._beta * self._q
+    if counter>1: # 1st-stage choice of TST. Must multiply TM with values
+      # qs = self._TM * self._q[1:]
+      Qmb = np.dot(self._TM, [np.max(self._q[1,:]), np.max(self._q[2,:])])
+      qs = self._w * Qmb + (1-self._w) * self._q[0]
+      decision_variable = self._beta * qs
+    else:
+      decision_variable = self._beta * self._q[state+1] if self._stage > 1 else self._beta * self._q[state]
+      # this is to make sure second stage indices are 1 or 2, from their choice of 0 or 1
     if self._prev_choice is not None:
       decision_variable[self._prev_choice] += self._perseveration_bias
     choice_probs = np.exp(decision_variable) / np.sum(np.exp(decision_variable))
     return choice_probs
 
-  def get_choice(self) -> int:
+  def get_choice(self, counter=1, state=0) -> int:
     """Sample a choice, given the agent's current internal state."""
-    choice_probs = self.get_choice_probs()
+    choice_probs = self.get_choice_probs(counter, state)
     choice = np.random.choice(self._n_actions, p=choice_probs)
     return choice
 
   def update(self,
-             choice: int,
-             reward: int):
+             choices: np.ndarray,
+             outcomes: np.ndarray, 
+             counter: int=0):
     """Update the agent after one step of the task.
 
     Args:
@@ -111,16 +128,30 @@ class AgentQ:
     self._q = ((1-self._forgetting_rate) * self._q +
                self._forgetting_rate * self._q_init)
 
-    self._prev_choice = choice
+    # self._prev_choice = choices
     # # Apply perseveration and anti-perseveration of chosen action.
     # onehot_choice = np.eye(self._n_actions)[choice]
     # self._q = 0.5 * (
     #     (2-self._perseveration_rate-self._anti_perseveration_rate) * self._q +
     #     self._perseveration_rate * onehot_choice + 
     #     self._anti_perseveration_rate * (1-onehot_choice))
+    
+    if self._stage > 1: # for two-stage tasks
+      # choice=0, outcome=1 -> traveled to 0 (should uppdate planet 1's value) -> 0,1 -> 0
+      # choice=0, outcome=0 -> traveled to 1 (should uppdate planet 2's value) -> 0,0 -> 1
+      # choice=1, outcome=1 -> traveled to 1 (should uppdate planet 2's value) -> 1,1 -> 1
+      # choice=1, outcome=0 -> traveled to 0 (should uppdate planet 1's value) -> 1,0 -> 0
+      traveled_state = choices[0]==outcomes[0] 
+      traveled_state += 1
+      if counter>0: # update 2nd-stage values
+        self._q[traveled_state,choices[counter]] = (1 - self._alpha) * self._q[traveled_state,choices[counter]] + self._alpha * outcomes[counter]
+      else: # counter=0
+        # update 1st-stage values
+        dtQ = self._q[traveled_state,choices[1]] - self._q[0, choices[0]]
+        self._q[0,choices[0]] = self._q[0,choices[0]] + self._alpha * dtQ
+    else: # just 1st-step task
+      self._q[0,choices[0]] = (1 - self._alpha) * self._q[0,choices[0]] + self._alpha * outcomes[0]
 
-    # Update chosen q for chosen action with observed reward.
-    self._q[choice] = (1 - self._alpha) * self._q[choice] + self._alpha * reward
 
   @property
   def q(self):
@@ -310,6 +341,7 @@ class EnvironmentBanditsDrift:
       self,
       sigma: float,
       n_actions: int = 2,
+      stages: int=1,
       ):
     """Initialize the environment."""
     # Check inputs
@@ -320,6 +352,7 @@ class EnvironmentBanditsDrift:
     # Initialize persistent properties
     self._sigma = sigma
     self._n_actions = n_actions
+    self._n_stages = stages
 
     # Sample new reward probabilities
     self._new_sess()
@@ -327,17 +360,21 @@ class EnvironmentBanditsDrift:
   def _new_sess(self):
     # Pick new reward probabilities.
     # Sample randomly between 0 and 1
-    self._reward_probs = np.random.rand(self._n_actions)
+    self._reward_probs = np.random.rand(self._n_actions, 2**(self._n_stages-1))
+    # self._trans_probs = np.array([[0.7, 0.3], [0.3, 0.7]]) # just for two-stage for now
+    self._common_trans_probs = np.array([0.7, 0.7]) # just for two-stage for now
 
-  def step(self, choice: int) -> int:
+  def step(self, choice: int, stage: int=1, state: int=0) -> int:
     """Run a single trial of the task.
 
     Args:
       choice: integer specifying choice made by the agent (must be less than
         n_actions.)
+      stage: indicate which stage the agent is in (by default 1)
+      state: which combination (0 for 1-stage bandits; 0 or 1 for two-stage tasks)
 
     Returns:
-      reward: The reward to be given to the agent. 0 or 1.
+      probability of 0 or 1. Indicates reward given if agent is in the terminal stage, otherwise common/rare transition
 
     """
     # Check inputs
@@ -346,18 +383,21 @@ class EnvironmentBanditsDrift:
           f'Found value for choice of {choice}, but must be in '
           f'{list(range(self._n_actions))}')
       raise ValueError(msg)
+    if stage>1: # first stage of two-stage task -> should return common/rare transition
+      outcome = np.random.rand() < self._trans_probs[choice]
+    else:
+      # this is either the first-stage of the one-stage bandit task or the terminal stage of the multi-step bandit tasks
+      # Sample reward with the probability of the chosen side
+      outcome = np.random.rand() < self._reward_probs[choice, state]
 
-    # Sample reward with the probability of the chosen side
-    reward = np.random.rand() < self._reward_probs[choice]
-
-    # Add gaussian noise to reward probabilities
-    drift = np.random.normal(loc=0, scale=self._sigma, size=self._n_actions)
-    self._reward_probs += drift
+      # Add gaussian noise to reward probabilities
+      drift = np.random.normal(loc=0, scale=self._sigma, size=(self._n_actions, 2**(self._n_stages-1)))
+      self._reward_probs += drift
 
     # Fix reward probs that've drifted below 0 or above 1
     self._reward_probs = np.clip(self._reward_probs, 0, 1)
 
-    return reward
+    return outcome
 
   @property
   def reward_probs(self) -> np.ndarray:
@@ -381,8 +421,10 @@ Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift]
 
 def run_experiment(agent: Agent,
                    environment: Environment,
-                   n_trials: int) -> BanditSession:
+                   n_trials: int, 
+                   stages: 1) -> BanditSession:
   """Runs a behavioral session from a given agent and environment.
+  This version generalizes to n-step bandits (by Jungsun Yoo).
 
   Args:
     agent: An agent object
@@ -392,26 +434,41 @@ def run_experiment(agent: Agent,
   Returns:
     experiment: A BanditSession holding choices and rewards from the session
   """
-  choices = np.zeros(n_trials)
-  rewards = np.zeros(n_trials)
-  reward_probs = np.zeros((n_trials, environment.n_actions))
-
+  choices = np.zeros(n_trials,stages) 
+  outcomes = np.zeros(n_trials, stages) # for 2-stage: 1st is whether common/rare, 2nd is whether reward/not
+  reward_probs = np.zeros((n_trials, environment.n_actions, 2**(stages-1))) # 2 for 1-stage, 4 for 2-stage tasks
+    # self._reward_probs = np.random.rand(self._n_actions, 2**(self._n_stages-1))
   for trial in np.arange(n_trials):
     # First record environment reward probs
     reward_probs[trial] = environment.reward_probs
-    # First agent makes a choice
-    choice = agent.get_choice()
-    # Then environment computes a reward
-    reward = environment.step(choice)
-    # Finally agent learns
-    agent.update(choice, reward)
-    # Log choice and reward
-    choices[trial] = choice
-    rewards[trial] = reward
+    state=0
+    counter = stages 
+    while counter>0:
+      # First agent makes a choice
+      choice = agent.get_choice(counter, state)    
+      outcome = environment.step(choice,counter,state)
+      
+      # agent.update(choice, outcome, counter)
+      # Log choice
+      choices[trial,np.abs(stages-counter)] = choice
+      # Log result   
+      outcomes[trial,np.abs(stages-counter)] = outcome       
+      if counter>1:
+        # if first-stage choice has been made on a n-step task, which "planet" did they arrive at?
+        state=choice if outcome==1 else np.abs(choice-1)
+        # state+=1 # to make it 1 or 2 
+      counter -=1
+ 
+    # Agent learns
+    counter = 0
+    while counter<stages:
+        agent.update(choices[trial, :], outcomes[trial, :], counter)       
+        counter += 1     
+
 
   experiment = BanditSession(n_trials=n_trials,
                              choices=choices,
-                             rewards=rewards,
+                             rewards=outcomes,
                              timeseries=reward_probs)
   return experiment
 
