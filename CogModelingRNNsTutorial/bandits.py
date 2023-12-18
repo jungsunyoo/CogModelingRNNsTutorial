@@ -550,8 +550,9 @@ def plot_session(choices: np.ndarray,
 
 def create_dataset(agent: Agent,
                    environment: Environment,
-                   n_trials_per_session: int,
-                   n_sessions: int,
+                   n_trials_per_session: int, # 200 given in original code
+                   n_sessions: int, # 220 given in original code
+                   stages: int=1, # 1 by default
                    batch_size: Optional[int] = None):
   """Generates a behavioral dataset from a given agent and environment.
 
@@ -568,18 +569,34 @@ def create_dataset(agent: Agent,
     A DatasetRNN object suitable for training RNNs.
     An experliment_list with the results of (simulated) experiments
   """
-  xs = np.zeros((n_trials_per_session, n_sessions, 2))
-  ys = np.zeros((n_trials_per_session, n_sessions, 1))
+  xs = np.zeros((n_trials_per_session, n_sessions, 2)) if stages==1 else np.zeros((n_sessions, n_trials_per_session, 4))
+  ys = np.zeros((n_trials_per_session, n_sessions, 1)) if stages==1 else np.zeros((n_sessions, n_trials_per_session, 1))
   experiment_list = []
 
   for sess_i in np.arange(n_sessions):
-    experiment = run_experiment(agent, environment, n_trials_per_session)
+    experiment = run_experiment(agent, environment, n_trials_per_session, stages)
     experiment_list.append(experiment)
-    prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
-    prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))
-    xs[:, sess_i] = np.swapaxes(
-        np.concatenate(([prev_choices], [prev_rewards]), axis=0), 0, 1)
-    ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
+
+    if stages>1: # 2-step task
+      choices_1 = experiment.choices[:,0]
+      choices_2 = experiment.choices[:,1]
+      trans = experiment.rewards[:,0]
+      rewards = experiment.rewards[:,1]
+      prev_choices_1 = np.concatenate(([0], choices_1[0:-1]))
+      prev_trans = np.concatenate(([0], trans[0:-1]))         
+      prev_choices_2 = np.concatenate(([0], choices_2[0:-1]))
+      prev_reward = np.concatenate(([0], rewards[0:-1]))
+      xs[:sess_i] = np.swapaxes(
+        np.concatenate(([prev_choices_1], [prev_trans], [prev_choices_2], [prev_reward]), axis=0), 0, 1)
+      ys[:sess_i] = np.expand_dims(choices_1,1)
+      xs = np.swapaxes(xs,1,0)
+      ys = np.swapaxes(ys,1,0)
+    else:
+      prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
+      prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))     
+      xs[:, sess_i] = np.swapaxes(
+          np.concatenate(([prev_choices], [prev_rewards]), axis=0), 0, 1)
+      ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
 
   dataset = DatasetRNN(xs, ys, batch_size)
   return dataset, experiment_list
