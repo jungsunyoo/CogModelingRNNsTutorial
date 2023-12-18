@@ -128,8 +128,8 @@ class AgentQ:
     # Decay q-values toward the initial value.
     self._q = ((1-self._forgetting_rate) * self._q +
                self._forgetting_rate * self._q_init)
-    int(choices)
-    int(outcomes)
+    choices.astype(int)
+    outcomes.astype(int)
     # self._prev_choice = choices
     # # Apply perseveration and anti-perseveration of chosen action.
     # onehot_choice = np.eye(self._n_actions)[choice]
