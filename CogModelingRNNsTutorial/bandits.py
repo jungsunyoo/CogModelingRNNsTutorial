@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import pdb
 
 from . import rnn_utils
 DatasetRNN = rnn_utils.DatasetRNN
@@ -147,6 +148,7 @@ class AgentQ:
         self._q[traveled_state,choices[counter]] = (1 - self._alpha) * self._q[traveled_state,choices[counter]] + self._alpha * outcomes[counter]
       else: # counter=0
         # update 1st-stage values
+        pdb.set_trace()
         dtQ = self._q[traveled_state,choices[1]] - self._q[0, choices[0]]
         self._q[0,choices[0]] = self._q[0,choices[0]] + self._alpha * dtQ
     else: # just 1st-step task
