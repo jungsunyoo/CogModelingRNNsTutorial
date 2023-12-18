@@ -589,15 +589,16 @@ def create_dataset(agent: Agent,
       xs[:sess_i] = np.swapaxes(
         np.concatenate(([prev_choices_1], [prev_trans], [prev_choices_2], [prev_reward]), axis=0), 0, 1)
       ys[:sess_i] = np.expand_dims(choices_1,1)
-      xs = np.swapaxes(xs,1,0)
-      ys = np.swapaxes(ys,1,0)
+
     else:
       prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
       prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))     
       xs[:, sess_i] = np.swapaxes(
           np.concatenate(([prev_choices], [prev_rewards]), axis=0), 0, 1)
       ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
-
+  if stages>1: # 2-step task
+    xs = np.swapaxes(xs,1,0)
+    ys = np.swapaxes(ys,1,0)
   dataset = DatasetRNN(xs, ys, batch_size)
   return dataset, experiment_list
 
