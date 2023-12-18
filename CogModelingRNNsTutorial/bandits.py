@@ -141,7 +141,7 @@ class AgentQ:
       # choice=0, outcome=0 -> traveled to 1 (should uppdate planet 2's value) -> 0,0 -> 1
       # choice=1, outcome=1 -> traveled to 1 (should uppdate planet 2's value) -> 1,1 -> 1
       # choice=1, outcome=0 -> traveled to 0 (should uppdate planet 1's value) -> 1,0 -> 0
-      traveled_state = choices[0]==outcomes[0] 
+      traveled_state = int(choices[0]==outcomes[0]) 
       traveled_state += 1
       if counter>0: # update 2nd-stage values
         self._q[traveled_state,choices[counter]] = (1 - self._alpha) * self._q[traveled_state,choices[counter]] + self._alpha * outcomes[counter]
