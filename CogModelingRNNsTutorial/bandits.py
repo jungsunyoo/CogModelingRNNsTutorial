@@ -128,8 +128,8 @@ class AgentQ:
     # Decay q-values toward the initial value.
     self._q = ((1-self._forgetting_rate) * self._q +
                self._forgetting_rate * self._q_init)
-    choices.astype(int)
-    outcomes.astype(int)
+    # choices.astype(int)
+    # outcomes.astype(int)
     # self._prev_choice = choices
     # # Apply perseveration and anti-perseveration of chosen action.
     # onehot_choice = np.eye(self._n_actions)[choice]
@@ -150,10 +150,10 @@ class AgentQ:
       else: # counter=0
         # update 1st-stage values
         # pdb.set_trace()
-        dtQ = self._q[traveled_state,choices[1]] - self._q[0, choices[0]]
-        self._q[0,choices[0]] = self._q[0,choices[0]] + self._alpha * dtQ
+        dtQ = self._q[traveled_state,int(choices[1])] - self._q[0, int(choices[0])]
+        self._q[0,int(choices[0])] = self._q[0, int(choices[0])] + self._alpha * dtQ
     else: # just 1st-step task
-      self._q[0,choices[0]] = (1 - self._alpha) * self._q[0,choices[0]] + self._alpha * outcomes[0]
+      self._q[0,int(choices[0])] = (1 - self._alpha) * self._q[0,int(choices[0])] + self._alpha * outcomes[0]
 
 
   @property
