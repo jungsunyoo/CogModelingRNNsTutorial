@@ -384,7 +384,7 @@ class EnvironmentBanditsDrift:
           f'{list(range(self._n_actions))}')
       raise ValueError(msg)
     if stage>1: # first stage of two-stage task -> should return common/rare transition
-      outcome = np.random.rand() < self._trans_probs[choice]
+      outcome = np.random.rand() < self._common_trans_probs[choice]
     else:
       # this is either the first-stage of the one-stage bandit task or the terminal stage of the multi-step bandit tasks
       # Sample reward with the probability of the chosen side
