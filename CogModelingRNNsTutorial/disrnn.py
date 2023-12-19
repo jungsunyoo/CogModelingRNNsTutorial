@@ -379,14 +379,14 @@ def plot_update_rules(params, make_network):
                           [0,1,0], [0,1,1],
                           [1,0,0], [1,0,1], 
                           [1,1,0], [1,1,1])
-          titles = ('Left, Rare, Unrewarded', 
-                    'Left, Rare, Rewarded', 
-                    'Left, Common, Unrewarded', 
-                    'Left, Common, Rewarded', 
-                    'Right, Rare, Unrewarded', 
-                    'Right, Rare, Rewarded', 
-                    'Right, Common, Unrewarded', 
-                    'Right, Common, Rewarded')
+          titles = ('Left, Rare, UR', 
+                    'Left, Rare, R', 
+                    'Left, Common, UR', 
+                    'Left, Common, R', 
+                    'Right, Rare, UR', 
+                    'Right, Rare, R', 
+                    'Right, Common, UR', 
+                    'Right, Common, R')
         else:
           observations = ([0, 0],)
           titles = ('All Trials',)           
