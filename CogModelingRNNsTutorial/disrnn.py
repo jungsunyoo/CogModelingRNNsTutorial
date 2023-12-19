@@ -326,7 +326,7 @@ def plot_update_rules(params, make_network):
         for s_i in np.arange(len(state_bins)):
           state = reference_state
           state[0, unit_i] = state_bins[s_i]
-          pdb.set_trace()
+          # pdb.set_trace()
           state[0, unit_input] = state_bins[si_i]
           _, next_state = step_hk(params, key, observation, state)
           next_state = np.array(next_state)
@@ -407,8 +407,11 @@ def plot_update_rules(params, make_network):
           observations = ([0, 0],)
           titles = ('All Trials',)
       # Choose whether to condition on other latent values
-      pdb.set_trace()
-      latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
+      # pdb.set_trace()
+      if len(update_mlp_inputs) == 8: # TST
+        latent_sensitive = update_mlp_inputs[update_mlp_inputs > 2] - 3 # because there are 3 inputs; make this code generlizable by shape of observations 
+      else: 
+        latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
       # Doesn't count if it depends on itself (this'll be shown no matter what)
       latent_sensitive = np.delete(
           latent_sensitive, latent_sensitive == latent_i
