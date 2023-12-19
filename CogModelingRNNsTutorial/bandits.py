@@ -569,7 +569,7 @@ def create_dataset(agent: Agent,
     A DatasetRNN object suitable for training RNNs.
     An experliment_list with the results of (simulated) experiments
   """
-  xs = np.zeros((n_trials_per_session, n_sessions, 2)) if stages==1 else np.zeros((n_sessions, n_trials_per_session, 4))
+  xs = np.zeros((n_trials_per_session, n_sessions, 2)) if stages==1 else np.zeros((n_sessions, n_trials_per_session, 3))
   ys = np.zeros((n_trials_per_session, n_sessions, 1)) if stages==1 else np.zeros((n_sessions, n_trials_per_session, 1))
   experiment_list = []
 
@@ -579,15 +579,15 @@ def create_dataset(agent: Agent,
 
     if stages>1: # 2-step task
       choices_1 = experiment.choices[:,0]
-      choices_2 = experiment.choices[:,1]
+      # choices_2 = experiment.choices[:,1]
       trans = experiment.rewards[:,0]
       rewards = experiment.rewards[:,1]
       prev_choices_1 = np.concatenate(([0], choices_1[0:-1]))
       prev_trans = np.concatenate(([0], trans[0:-1]))         
-      prev_choices_2 = np.concatenate(([0], choices_2[0:-1]))
+      # prev_choices_2 = np.concatenate(([0], choices_2[0:-1]))
       prev_reward = np.concatenate(([0], rewards[0:-1]))
       xs[:sess_i] = np.swapaxes(
-        np.concatenate(([prev_choices_1], [prev_trans], [prev_choices_2], [prev_reward]), axis=0), 0, 1)
+        np.concatenate(([prev_choices_1], [prev_trans], [prev_reward]), axis=0), 0, 1)
       ys[:sess_i] = np.expand_dims(choices_1,1)
 
     else:
