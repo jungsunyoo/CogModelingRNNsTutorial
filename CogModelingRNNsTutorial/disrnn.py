@@ -364,13 +364,13 @@ def plot_update_rules(params, make_network):
     if latent_sigmas[latent_i] < 0.5:
       # Which of its input bottlenecks are open?
       update_mlp_inputs = np.argwhere(update_sigmas[latent_i] < 0.9)
-      if len(update_mlp_inputs) == 8: # TST
-        choice_sensitive = np.any(update_mlp_inputs == 0)
-        trans_sensitive = np.any(update_mlp_inputs == 1)
-        reward_sensitive = np.any(update_mlp_inputs == 2)
-      else:
-        choice_sensitive = np.any(update_mlp_inputs == 0)
-        reward_sensitive = np.any(update_mlp_inputs == 1)
+      # if len(update_mlp_inputs) == 8: # TST
+      choice_sensitive = np.any(update_mlp_inputs == 0)
+      trans_sensitive = np.any(update_mlp_inputs == 1)
+      reward_sensitive = np.any(update_mlp_inputs == 2)
+      # else:
+      #   choice_sensitive = np.any(update_mlp_inputs == 0)
+      #   reward_sensitive = np.any(update_mlp_inputs == 1)
       # pdb.set_trace()
       # Choose which observations to use based on input bottlenecks
       if len(update_mlp_inputs) == 8: # TST
@@ -408,10 +408,10 @@ def plot_update_rules(params, make_network):
           titles = ('All Trials',)
       # Choose whether to condition on other latent values
       # pdb.set_trace()
-      if len(update_mlp_inputs) == 8: # TST
-        latent_sensitive = update_mlp_inputs[update_mlp_inputs > 2] - 3 # because there are 3 inputs; make this code generlizable by shape of observations 
-      else: 
-        latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
+      # if len(update_mlp_inputs) == 8: # TST
+      latent_sensitive = update_mlp_inputs[update_mlp_inputs > 2] - 3 # because there are 3 inputs; make this code generlizable by shape of observations 
+      # else: 
+        # latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
       # Doesn't count if it depends on itself (this'll be shown no matter what)
       latent_sensitive = np.delete(
           latent_sensitive, latent_sensitive == latent_i
