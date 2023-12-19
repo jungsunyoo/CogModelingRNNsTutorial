@@ -363,25 +363,48 @@ def plot_update_rules(params, make_network):
     if latent_sigmas[latent_i] < 0.5:
       # Which of its input bottlenecks are open?
       update_mlp_inputs = np.argwhere(update_sigmas[latent_i] < 0.9)
-      choice_sensitive = np.any(update_mlp_inputs == 0)
-      reward_sensitive = np.any(update_mlp_inputs == 1)
-      pdb.set_trace()
-      # Choose which observations to use based on input bottlenecks
-      if choice_sensitive and reward_sensitive:
-        observations = ([0, 0], [0, 1], [1, 0], [1, 1])
-        titles = ('Left, Unrewarded',
-                  'Left, Rewarded',
-                  'Right, Unrewarded',
-                  'Right, Rewarded')
-      elif choice_sensitive:
-        observations = ([0, 0], [1, 0])
-        titles = ('Choose Left', 'Choose Right')
-      elif reward_sensitive:
-        observations = ([0, 0], [0, 1])
-        titles = ('Rewarded', 'Unreward')
+      if len(update_mlp_inputs) == 8: # TST
+        choice_sensitive = np.any(update_mlp_inputs == 0)
+        trans_sensitive = np.any(update_mlp_inputs == 1)
+        reward_sensitive = np.any(update_mlp_inputs == 2)
       else:
-        observations = ([0, 0],)
-        titles = ('All Trials',)
+        choice_sensitive = np.any(update_mlp_inputs == 0)
+        reward_sensitive = np.any(update_mlp_inputs == 1)
+      # pdb.set_trace()
+      # Choose which observations to use based on input bottlenecks
+      if len(update_mlp_inputs) == 8: # TST
+        if choice_sensitive and trans_sensitive and reward_sensitive:
+          observations = ([0,0,0], [0,0,1], 
+                          [0,1,0], [0,1,1],
+                          [1,0,0], [1,0,1], 
+                          [1,1,0], [1,1,1])
+          titles = ('Left, Rare, Unrewarded', 
+                    'Left, Rare, Rewarded', 
+                    'Left, Common, Unrewarded', 
+                    'Left, Common, Rewarded', 
+                    'Right, Rare, Unrewarded', 
+                    'Right, Rare, Rewarded', 
+                    'Right, Common, Unrewarded', 
+                    'Right, Common, Rewarded')
+        else:
+          observations = ([0, 0],)
+          titles = ('All Trials',)           
+      else: 
+        if choice_sensitive and reward_sensitive:
+          observations = ([0, 0], [0, 1], [1, 0], [1, 1])
+          titles = ('Left, Unrewarded',
+                    'Left, Rewarded',
+                    'Right, Unrewarded',
+                    'Right, Rewarded')
+        elif choice_sensitive:
+          observations = ([0, 0], [1, 0])
+          titles = ('Choose Left', 'Choose Right')
+        elif reward_sensitive:
+          observations = ([0, 0], [0, 1])
+          titles = ('Rewarded', 'Unreward')
+        else:
+          observations = ([0, 0],)
+          titles = ('All Trials',)
       # Choose whether to condition on other latent values
       latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
       # Doesn't count if it depends on itself (this'll be shown no matter what)
