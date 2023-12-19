@@ -326,6 +326,7 @@ def plot_update_rules(params, make_network):
         for s_i in np.arange(len(state_bins)):
           state = reference_state
           state[0, unit_i] = state_bins[s_i]
+          pdb.set_trace()
           state[0, unit_input] = state_bins[si_i]
           _, next_state = step_hk(params, key, observation, state)
           next_state = np.array(next_state)
