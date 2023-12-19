@@ -407,6 +407,7 @@ def plot_update_rules(params, make_network):
           observations = ([0, 0],)
           titles = ('All Trials',)
       # Choose whether to condition on other latent values
+      pdb.set_trace()
       latent_sensitive = update_mlp_inputs[update_mlp_inputs > 1] - 2
       # Doesn't count if it depends on itself (this'll be shown no matter what)
       latent_sensitive = np.delete(
