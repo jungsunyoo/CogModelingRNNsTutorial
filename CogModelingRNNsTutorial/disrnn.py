@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
-
+import pdb
 from . import rnn_utils
 
 warnings.filterwarnings("ignore")
@@ -187,6 +187,8 @@ def plot_bottlenecks(params, sort_latents=True, obs_names=None):
   if obs_names is None:
     if obs_dim == 2:
       obs_names = ['Choice', 'Reward']
+    elif obs_dim == 3: # TST
+      obs_names = ['Choice', 'Transition', 'Reward']
     elif obs_dim == 5:
       obs_names = ['A', 'B', 'C', 'D', 'Reward']
     else: 
@@ -363,6 +365,7 @@ def plot_update_rules(params, make_network):
       update_mlp_inputs = np.argwhere(update_sigmas[latent_i] < 0.9)
       choice_sensitive = np.any(update_mlp_inputs == 0)
       reward_sensitive = np.any(update_mlp_inputs == 1)
+      pdb.set_trace()
       # Choose which observations to use based on input bottlenecks
       if choice_sensitive and reward_sensitive:
         observations = ([0, 0], [0, 1], [1, 0], [1, 1])
